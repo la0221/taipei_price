@@ -236,34 +236,62 @@ def select_option(df,places,usefor,ages):
 
     length , place_price,P,p = age_use2(df,places,ages,option,usefor)
 
+    unit_df = sumX(df,ages,place_price/length,usefor)
+    price_df = sumX(df,ages,place_price,usefor)
+    score_df = sumX(df,ages,length,usefor)
+
+
     st.header(option+"段 每坪售出")
     P_heigh = '<p style="font-family:sans-serif; color:	SteelBlue; font-size: 20px;">最高 : %.2f 萬 ,用途 : %s ,屋齡 : %s 年 </p>'%(P[0],P[1],P[2])
     st.markdown(P_heigh, unsafe_allow_html=True)
     P_low = '<p style="font-family:sans-serif; color:SlateGray; font-size: 20px;">最低 : %.2f 萬 ,用途 : %s ,屋齡 : %s 年 </p>'%(p[0],p[1],p[2])
     st.markdown(P_low, unsafe_allow_html=True)
-    fig = px.bar(df[df["地段"]==places[option]] , x="主要用途",y="total_price",
-             color="age",
-             barmode="group"
-             #facet_row="time",
-             #facet_col="day",
-             #category_orders={"day": ["Thur","Fri","Sat","Sun"],"time":["Lunch", "Dinner"]}
-            )
+    
+    year=[]
+    #year1=[]
+    for i in range(4):
+        year.append([place_price[i][0],place_price[i][1],place_price[i][2],place_price[i][3],place_price[i][4]])
+        #year0.append([length[i][0],length[i][1],length[i][2],length[i][3],length[i][4]])
+    use2 = ['住家用', '商業用', '辦公用', '住商用', '工業用']
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=use2,
+        y=(year[0][0],year[0][1],year[0][2],year[0][3],year[0][4]),
+        name='2~5',
+        marker_color='indianred'
+    ))
+    fig.add_trace(go.Bar(
+        x=use2,
+        y=(year[1][0],year[1][1],year[1][2],year[1][3],year[1][4]),
+        name='6~10',
+        marker_color='lightsalmon'
+    ))
+    fig.add_trace(go.Bar(
+        x=use2,
+        y=(year[2][0],year[2][1],year[2][2],year[2][3],year[2][4]),
+        name='11~20',
+        marker_color='lightblue'
+    ))
+    fig.add_trace(go.Bar(
+        x=use2,
+        y=(year[3][0],year[3][1],year[3][2],year[3][3],year[3][4]),
+        name='20+',
+        marker_color='dodgerblue'
+    ))
+    
+
+    # Here we modify the tickangle of the xaxis, resulting in rotated labels.
+    fig.update_layout(barmode='group', xaxis_tickangle=-45)
     
     # 網頁上呈現
     ## 圖
     st.plotly_chart(fig)
-    ## 文字 0~4各自表示甚麼意思
-    new_title = '<p style="font-family:sans-serif; color:Green; font-size: 30px;">住家用 : 0 ,商業用 : 1 ,辦公用 : 2 ,住商用 : 3 ,工業用 : 4</p>'
-    st.markdown(new_title, unsafe_allow_html=True)
-    ## 註解
-    st.text("p.s(其他用途通常為停車使用)")
     st.markdown("---")
 
     cols1 = st.columns([1,1])
     
-    unit_df = sumX(df,ages,place_price/length,usefor)
-    price_df = sumX(df,ages,place_price,usefor)
-    score_df = sumX(df,ages,length,usefor)
+    
 
 
     score_df.set_index('屋齡(年)', inplace=True)
@@ -281,6 +309,7 @@ def select_option(df,places,usefor,ages):
     
     st.markdown("---")
 
+    
 
 
     return places[option],score_df,unit_df,price_df,fig
