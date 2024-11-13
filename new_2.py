@@ -82,12 +82,12 @@ def 擷取交易(fname,data_explain):  ##== (KDD1)擷取交易儀表板: X = 擷
 
     title = '<h2 style="font-family:sans-serif;text-align:center">(KDD1) 擷取交易數據 %s</h2>'%(fname)
     st.markdown(title, unsafe_allow_html=True)
-    st.subheader("1-1. 原始數據展示")
+    st.subheader("1-1 原始數據展示")
     st.write("* 數據來源：https://plvr.land.moi.gov.tw/DownloadOpenData")
     st.write("* 記錄筆數 = " + str(X.shape[0]))
     st.dataframe(X.head(5))
     # ==> [[AIp04/C4)(1)水平流程]]
-    st.subheader("1-2. 數據說明")
+    st.subheader("1-2 數據說明")
     
     cols1 = st.columns([1,1])
     cols1[0].table(data_explain)
@@ -97,10 +97,10 @@ def 擷取交易(fname,data_explain):  ##== (KDD1)擷取交易儀表板: X = 擷
     st.html("<h2  style='text-align:center;margin:0 0 3% 0'>== (KDD2) 探索交易數據--</h2>")
 
     cols = st.columns([1, 1])  # -- (d).前台--canvas
-    correlation_map = '<h3 style="text-align:center;font-family:sans-serif;">* Correlation</h3>'
+    correlation_map = '<h3 style="text-align:center;font-family:sans-serif;">2-1 Correlation</h3>'
     cols[0].markdown(correlation_map, unsafe_allow_html=True)
     cols[0].pyplot(plt)
-    a = '<h3  style="text-align:center;font-family:sans-serif;">2.說明</h3>'
+    a = '<h3  style="text-align:center;font-family:sans-serif;">2-2 說明</h3>'
     cols[1].markdown(a, unsafe_allow_html=True)
     cols[1].html("""<p style='text-align: left;'>1. <span style="background-color:yellow">total_price & area：相關係數接近 0.94</span>，表現出<span style="background-color:yellow">強烈的正相關</span>。
                                                 <br>這意味著<span style="background-color:yellow">房產總價（total_price）與面積（area） 之間關係密切</span>，面積越大，總價越高。
@@ -114,9 +114,9 @@ def 擷取交易(fname,data_explain):  ##== (KDD1)擷取交易儀表板: X = 擷
     st.markdown("---")
     st.html("<h2  style='text-align:center;margin:0 0 3% 0'>== (KDD3) 交易數據轉換--</h2>")
     cols2 = st.columns([1, 1])
-    cols2[0].subheader("1.產生的數據標籤")
+    cols2[0].subheader("3-1 產生的數據標籤")
     cols2[0].dataframe(selected_columns_with_index)
-    cols2[1].subheader("2.說明")
+    cols2[1].subheader("3-2 說明")
     cols2[1].write('''
     * year：交易年份，由datetime轉化而來
     
@@ -146,7 +146,24 @@ def 季度模型(XXX):    ##== (KDD2)季度模型儀表板: Svyq = 總成交結�
     FIGym.update_traces(mode='markers+lines');
     FIGym.update_xaxes(tickformat='%Y-%m', dtick='M1');
 
-    FIGym1 = px.pie(Ta[Ta.index != "All"], values="All", names=Ta[Ta.index != "All"].index, labels=Ta[Ta.index != "All"].index, color=Ta[Ta.index != "All"].index)
+    FIGym2 = go.Figure(go.Scatter(x=Ta.T.index.astype(str),  y=Ta.T["All"][:-1]))
+    FIGym2.update_traces(mode='markers+lines');
+    FIGym2.update_xaxes(tickformat='%Y-%m', dtick='M1');
+    
+
+    quarterly_amount = XXX.groupby(['地段', 'yq'])['total_price'].sum().unstack(fill_value=0)
+    quarterly_amount.columns = quarterly_amount.columns.astype(str)
+
+    fig_stacked_bar = go.Figure()
+    for location in quarterly_amount.index:
+        fig_stacked_bar.add_trace(
+            go.Bar(
+                x=quarterly_amount.columns,
+                y=quarterly_amount.loc[location],
+                name=location
+            )
+        )
+
 
 
     fig = px.bar(Sv, x=Sv.index, y="All", color="All", text="All", barmode='group')
@@ -157,24 +174,15 @@ def 季度模型(XXX):    ##== (KDD2)季度模型儀表板: Svyq = 總成交結�
     st.markdown("---")
     st.header("== (KDD4) 交易模型（一）季度模型-- ")
     cols = st.columns([1, 1])  # -- (d).前台--canvas
-    cols[0].subheader("1.1 四季度交易量")
-    cols[0].dataframe(Ta)
-    cols[1].subheader("1.2 交易量圓餅圖")
-    cols[1].plotly_chart(FIGym1, theme="streamlit", use_container_width=True)
-    st.subheader("1.3 數據解讀(KDD5) ")
-    st.html(''' 
-            <p>(1) <span style="background-color:yellow">忠孝東路、吳興街、永吉路、信義路和基隆路等核心街道屬於信義區的蛋黃區</span>，<span style="background-color:yellow">交易量明顯高於其他街道</span>，顯示出房地產需求集中於這些核心地段。這些街道擁有良好的交通接駁、商業設施和高生活機能，<span style="background-color:yellow">吸引大部分買家</span>。</p>
-            <p>(2) <span style="background-color:yellow">松山路、光復南路等街道交易量雖不及核心街道，但仍有一定市場需求</span>，反映出買家對<span style="background-color:yellow">價格與地段的平衡考量</span>。</p>
-            <p>(3) 位於<span style="background-color:yellow">邊緣的街道交易量較少</span>，顯示出需求較低，這些區域的購房主要源自預算考量或對特定社區的偏好，而非大眾市場需求。</p>
-            <p>(4) 這張交易量圓餅圖展示信義區房市需求的地理分布，<span style="background-color:yellow">顯示購屋者偏好核心地帶，並逐漸向外擴展</span>，對未來房地產開發與市場定位具參考價值。</p>
-                ''')
+    
+    
     st.markdown("---")
     cols1 = st.columns([1, 1])  # -- (d).前台--canvas
-    cols1[0].subheader("2.1 四季度平均單價")
+    cols1[0].subheader("4-1 四季度平均單價")
     cols1[0].dataframe(Sv)
-    cols1[1].subheader("2.2 平均單價折線圖")
-    cols1[1].plotly_chart(FIGym, theme="streamlit", use_container_width=True)
-    st.subheader("2.3 數據解讀(KDD5)")
+    cols1[1].subheader("4-1-a 平均單價折線圖")
+    cols1[1].plotly_chart(FIGym2, theme="streamlit", use_container_width=True)
+    st.subheader("4-1 數據解讀(KDD5)")
     st.html('''   
     <p>(1) <span style="background-color:yellow">2019年至2021年間平均單價在70至75之間微幅波動，總體穩定</span>，顯示當時房市需求相對穩定或供需平衡。<span style="background-color:yellow">2020年初疫情雖對市場有影響，但因經濟前景不確定，需求下降，價格未顯著上升</span>。</p>
     <p>(2) <span style="background-color:yellow">2021年疫情趨緩，需求快速釋放</span>，加上遠程辦公興起，富裕買家傾向在都市核心區購買更大或更高級的房產，<span style="background-color:yellow">房價因此上漲</span>。</p>
@@ -182,8 +190,96 @@ def 季度模型(XXX):    ##== (KDD2)季度模型儀表板: Svyq = 總成交結�
     <p>(4) <span style="background-color:yellow">2023上半年在疫情後需求延續「報復性消費」模式，價格持續上漲</span>；<span style="background-color:yellow">2023下半年受聯準會升息、地緣政治緊張、通膨等影響，價格下跌</span>。</p>    
              ''')
 
+    st.markdown("---")
+    
+    # 顯示信義區各路段季度交易金額的堆積柱形圖
+    
+    #st.plotly_chart(fig_stacked_bar, use_container_width=True)
     return Sv
 
+def palce_model(XXX):
+    Ta = pd.crosstab(XXX["地段"], XXX["yq"], margins=True);
+    # start_period = pd.Period('2015Q1', freq='Q')
+    ##== (2).頻次分布表
+    Sv = pd.crosstab(index=XXX["地段"], columns=XXX["yq"],
+                     values=XXX["unit_price"], aggfunc="mean", margins=True)
+
+
+    FIGym = go.Figure(go.Scatter(x=Sv.T.index.astype(str), y=Sv.T["All"]))
+    FIGym.update_traces(mode='markers+lines');
+    FIGym.update_xaxes(tickformat='%Y-%m', dtick='M1');
+
+    FIGym2 = go.Figure(go.Scatter(x=Ta.T.index.astype(str),  y=Ta.T["All"][:-1]))
+    FIGym2.update_traces(mode='markers+lines');
+    FIGym2.update_xaxes(tickformat='%Y-%m', dtick='M1');
+    FIGym1 = px.pie(Ta[Ta.index != "All"], values="All", names=Ta[Ta.index != "All"].index, labels=Ta[Ta.index != "All"].index, color=Ta[Ta.index != "All"].index)
+
+    quarterly_amount = XXX.groupby(['地段', 'yq'])['total_price'].sum().unstack(fill_value=0)
+    quarterly_amount.columns = quarterly_amount.columns.astype(str)
+
+    fig_stacked_bar = go.Figure()
+    for location in quarterly_amount.index:
+        fig_stacked_bar.add_trace(
+            go.Bar(
+                x=quarterly_amount.columns,
+                y=quarterly_amount.loc[location],
+                name=location
+            )
+        )
+
+    st.markdown("---")
+    
+    # 顯示信義區各路段季度交易金額的堆積柱形圖
+    
+    
+
+    fig = px.bar(Sv, x=Sv.index, y="All", color="All", text="All", barmode='group')
+
+    fig1 = px.bar(Ta, x=Ta.index, y="All", color="All", text="All", barmode='group')
+
+    # -- (B) 以下為 主畫面(canvas)設計
+    st.header("== KDD4 交易模型(二)地段模型-- ")
+    cols = st.columns([1, 1])  # -- (d).前台--canvas
+    st.markdown("---")
+    cols[0].subheader("4–2-a 數據解讀(KDD5)")
+    #cols[0].dataframe(Ta)
+    cols[0].html(''' 
+            <p>(1) <span style="background-color:yellow">忠孝東路、吳興街、永吉路、信義路和基隆路等核心街道屬於信義區的蛋黃區</span>，<span style="background-color:yellow">交易量明顯高於其他街道</span>，顯示出房地產需求集中於這些核心地段。這些街道擁有良好的交通接駁、商業設施和高生活機能，<span style="background-color:yellow">吸引大部分買家</span>。</p>
+            <p>(2) <span style="background-color:yellow">松山路、光復南路等街道交易量雖不及核心街道，但仍有一定市場需求</span>，反映出買家對<span style="background-color:yellow">價格與地段的平衡考量</span>。</p>
+            <p>(3) 位於<span style="background-color:yellow">邊緣的街道交易量較少</span>，顯示出需求較低，這些區域的購房主要源自預算考量或對特定社區的偏好，而非大眾市場需求。</p>
+            <p>(4) 這張交易量圓餅圖展示信義區房市需求的地理分布，<span style="background-color:yellow">顯示購屋者偏好核心地帶，並逐漸向外擴展</span>，對未來房地產開發與市場定位具參考價值。</p>
+                ''')
+    cols[1].subheader("4-2-a 交易量圓餅圖")
+    cols[1].plotly_chart(FIGym1, theme="streamlit", use_container_width=True)
+
+
+    quarterly_amount = XXX.groupby(['地段', 'yq'])['total_price'].sum().unstack(fill_value=0)
+    quarterly_amount.columns = quarterly_amount.columns.astype(str)
+
+    fig_stacked_bar = go.Figure()
+    for location in quarterly_amount.index:
+        fig_stacked_bar.add_trace(
+            go.Bar(
+                x=quarterly_amount.columns,
+                y=quarterly_amount.loc[location],
+                name=location
+            )
+        )
+
+    fig_stacked_bar.update_layout(
+        barmode='stack',
+        title="4-2-b  各路段季度交易金額柱狀圖",
+        xaxis_title="季度",
+        yaxis_title="交易金額 (萬元)",
+        legend_title="地段位置",
+    )
+    st.markdown("---")
+    
+    # 顯示信義區各路段季度交易金額的堆積柱形圖
+    
+    st.plotly_chart(fig_stacked_bar, use_container_width=True)
+
+    return XXX
 def 屋齡模型(XXX):
 
     AM = XXX.groupby("AR").agg({"地段": "nunique", "unit_price": "mean", "area":"count",
@@ -315,8 +411,16 @@ def select_option(df,places,usefor,ages):
     return places[option],score_df,unit_df,price_df,fig
 
 
-def tmp(df,places,usefor,ages):
+def tmp(df,places,usefor,ages,XXX):
     a =1
+    Sv = pd.crosstab(index=XXX["地段"], columns=XXX["yq"],
+                     values=XXX["unit_price"], aggfunc="mean", margins=True)
+    Sv1 = Sv.sort_values(by="All", ascending=False)
+    fig2 = px.area(Sv1, x=Sv1.index, y="All", color=Sv1.index, text="All")
+    fig2.update_traces(texttemplate='%{y:.0f}',textposition="top center",)
+    
+
+
     st.markdown("---")
     st.html("<h2>== (KDD4) 交易模型（四）單位金額 --</h2>")
     
@@ -324,6 +428,7 @@ def tmp(df,places,usefor,ages):
     st.latex(r"""
              \frac{\sum_i^n unit\_price_i}{len(unit\_price)}
              """)
+    st.plotly_chart(fig2)
     st.html("<h3>以下單位均為:  坪/萬</h3>")
 
     cols2 = st.columns([1,1])
@@ -354,6 +459,7 @@ def tmp(df,places,usefor,ages):
     cols4[0].write(p)
     cols4[0].dataframe(a4.style.highlight_max())
 
+    Ta = pd.crosstab(XXX["地段"], XXX["yq"], margins=True)
     
     return a0,a1,a2,a3,a4
 
@@ -405,7 +511,7 @@ if __name__ == "__main__":
     ##== (1).設定頁面組態 與 導航列 (前台(a)navbar) ==##
     st.set_page_config(page_title="SPC-S01 RDS系統", page_icon="✅", layout="wide",)  #==> [[AIp04/C4)(5)加上頁註,頁標題等]]
     # st.set_option('deprecation.showPyplotGlobalUse', False)
-    page = st_navbar(["[擷取交易]", "[季度模型]","[屋齡模型]","[路段選擇]","[單位金額]","[匯出PPT檔]"])
+    page = st_navbar(["[擷取交易]", "[季度模型]","[地段模型]","[屋齡模型]","[路段選擇]","[單位金額]","[匯出PPT檔]"])
 
     ##== (2).設定session初始值等 ==##
     Xname = "data/Xinyi.csv"
@@ -453,6 +559,13 @@ if __name__ == "__main__":
             else:
                 sss.Svyq = 季度模型(sss.X)
                 check2log(f"季度模型: Svyq with {sss.Svyq.shape} shape", sss.LOG)
+        case "[地段模型]":
+            if sss.X is None:
+                st.write("尚未擷取交易數據，請先擷取交易數據！")
+                sss.LOG.append("尚未擷取交易數據，請先擷取交易數據！")
+            else:
+                sss.Svyq = palce_model(sss.X)
+                check2log(f"屋齡模型: Svyq with {sss.Svyq.shape} shape", sss.LOG)
         case "[屋齡模型]":
             if sss.X is None:
                 st.write("尚未擷取交易數據，請先擷取交易數據！")
@@ -473,8 +586,8 @@ if __name__ == "__main__":
                 st.write("尚未擷取交易數據，請先擷取交易數據！")
                 sss.LOG.append("尚未擷取交易數據，請先擷取交易數據！")
             else:
-                sss.Svyq = tmp(df,places,usefor,ages)
-                check2log(f"路段選擇: Svyq with {sss.Svyq[1].shape} shape", sss.LOG)
+                sss.Svyq = tmp(df,places,usefor,ages,sss.X)
+                check2log(f"Svyq with {sss.Svyq[1].shape} shape", sss.LOG)
 
         case "[匯出PPT檔]":
             if sss.df is None:
